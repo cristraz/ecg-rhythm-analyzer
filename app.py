@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import random
+import os
 
 # Configuración de la página
 st.set_page_config(
@@ -23,13 +24,36 @@ def preprocess_image(image):
     std = np.array([0.229, 0.224, 0.225])
     img_array = (img_array - mean) / std
     img_array = np.transpose(img_array, (2, 0, 1))
-    img_array = np.expand_dims(img_array, axis=0)
+    img_array = np.expand_dims(img_array, axis=0).astype(np.float32)
     return img_array
 
-# Función de inferencia dummy (temporal hasta tener el modelo real)
-def predict_dummy(img_array):
-    probability = random.uniform(0.0, 1.0)
+# Función para cargar el modelo ONNX
+def load_model():
+    try:
+        import onnxruntime as ort
+        model_path = os.path.join("model", "ecg_model.onnx")
+        session = ort.InferenceSession(model_path)
+        return session
+    except Exception:
+        return None
+
+# Función de inferencia
+def predict(img_array, session):
+    if session is None:
+        # Modelo dummy mientras no llegue el real
+        return random.uniform(0.0, 1.0)
+    input_name = session.get_inputs()[0].name
+    result = session.run(None, {input_name: img_array})
+    probability = float(1 / (1 + np.exp(-result[0][0][0])))
     return probability
+
+# Cargar modelo al iniciar
+session = load_model()
+
+if session is not None:
+    st.info("✅ Modelo real cargado correctamente.")
+else:
+    st.warning("⚙️ Usando modelo de prueba — el modelo real se integrará en Semana 3.")
 
 # Carga de imagen
 uploaded_file = st.file_uploader("Sube una imagen de ECG", type=["png", "jpg", "jpeg"])
@@ -42,7 +66,7 @@ if uploaded_file is not None:
 
         # Preprocesar y predecir
         img_array = preprocess_image(image)
-        probability = predict_dummy(img_array)
+        probability = predict(img_array, session)
 
         # Mostrar resultado
         st.subheader("Resultado:")

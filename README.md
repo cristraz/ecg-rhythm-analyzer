@@ -53,7 +53,7 @@ python -m streamlit run app.py
 
 ## App desplegada
 
-*URL por completar tras el deploy final.*
+https://ecg-rhythm-analyzer-f2jktkxqkkccdneihpr4b2.streamlit.app/
 
 ## Licencia
 
